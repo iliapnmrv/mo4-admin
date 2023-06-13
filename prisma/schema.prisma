@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model departments {
+  id     Int     @id @default(autoincrement())
+  name   String  @default("") @db.VarChar(500)
+  kod    String? @unique(map: "kod") @db.VarChar(10)
+  status String? @db.VarChar(20)
+}
+
+model employees {
+  id                Int     @id @default(autoincrement())
+  kodsotr           String  @db.VarChar(10)
+  fio               String  @db.VarChar(100)
+  position          String  @db.VarChar(100)
+  position_category String  @db.VarChar(30)
+  department_kod    String  @db.VarChar(10)
+  email             String? @db.VarChar(50)
+}
+
+model projects {
+  id             Int              @id @default(autoincrement())
+  name           String           @db.VarChar(100)
+  client_port    Int?
+  server_port    Int?
+  projects_users projects_users[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model projects_users {
+  id         Int      @id @default(autoincrement())
+  project_id Int
+  user_id    Int
+  role       Int
+  projects   projects @relation(fields: [project_id], references: [id], onDelete: Cascade, map: "FK_project")
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "FK_user")
+
+  @@index([project_id], map: "FK_project")
+  @@index([user_id], map: "FK_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id                          Int              @id @default(autoincrement())
+  objectguid                  String           @db.VarChar(100)
+  objectsid                   String           @db.VarChar(100)
+  cn                          String           @db.VarChar(50)
+  displayname                 String?          @db.VarChar(50)
+  name                        String?          @db.VarChar(50)
+  title                       String?          @db.VarChar(100)
+  telephonenumber             String?          @db.VarChar(100)
+  ipphone                     String?          @db.VarChar(100)
+  department                  String?          @db.VarChar(100)
+  samaccountname              String?          @db.VarChar(50)
+  userprincipalname           String?          @db.VarChar(50)
+  mail                        String?          @db.VarChar(50)
+  mailnickname                String?          @db.VarChar(50)
+  proxyaddresses0             String?          @db.VarChar(50)
+  proxyaddresses1             String?          @db.VarChar(50)
+  msrtcsip_primaryuseraddress String?          @db.VarChar(100)
+  pwdlastset                  String?          @db.VarChar(100)
+  useraccountcontrol          String?          @db.VarChar(5)
+  whenchanged                 DateTime?        @db.DateTime(0)
+  whencreated                 DateTime?        @db.DateTime(0)
+  projects_users              projects_users[]
+}
+
+model watcher {
+  id          Int       @id @default(autoincrement())
+  username    String?   @db.VarChar(30)
+  workstation String?   @db.VarChar(50)
+  date        DateTime? @default(now()) @db.DateTime(0)
+}
