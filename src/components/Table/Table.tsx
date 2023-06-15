@@ -1,19 +1,22 @@
 "use client";
-import { projects_users, users } from "@prisma/client";
+import { projects, projects_users, users } from "@prisma/client";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import TableSort from "./TableSort";
+import TableSortProject from "./TableSortProject";
 
-type UsersResponse = (users & {
+export type UsersResponse = (users & {
   projects_users: projects_users[];
 })[];
 
 type Props = {
   users: UsersResponse;
+  projects: projects[];
 };
 
-type SortBy = {
+export type SortBy = {
   direction: "asc" | "desc";
-  field: keyof UsersResponse[number];
+  field: keyof UsersResponse[number] | string;
 };
 
 const USER_ROLES_OPTIONS = [
@@ -24,7 +27,7 @@ const USER_ROLES_OPTIONS = [
   { value: 5, label: "Нет доступа" },
 ];
 
-const Table = ({ users: initialUsers }: Props) => {
+const Table = ({ users: initialUsers, projects }: Props) => {
   const [users, setUsers] = useState<UsersResponse>(initialUsers);
 
   const [sortBy, setSortBy] = useState<SortBy>({
@@ -32,27 +35,40 @@ const Table = ({ users: initialUsers }: Props) => {
     field: "name",
   });
 
+  const [project, setProject] = useState<string>("");
+
   const onFilterUsers = async () => {
-    const res = await fetch(`/api?${new URLSearchParams(sortBy)}`);
+    const res = await fetch(
+      `/api?${new URLSearchParams({
+        ...sortBy,
+        project,
+      })}`,
+      {
+        next: { tags: ["users"] },
+      }
+    );
     const filtered = await res.json();
     setUsers(filtered);
   };
 
   useEffect(() => {
     onFilterUsers();
-  }, [sortBy]);
+  }, [sortBy, project]);
 
   const onUserEditRole = async (
     role: number,
     project_id: number,
     user_id: number
   ) => {
-    const res = await fetch(`/api`, {
+    await fetch(`/api`, {
       method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ role, project_id, user_id }),
+      next: { tags: ["users"] },
     });
-    const filtered = await res.json();
-    setUsers(filtered);
+    onFilterUsers();
   };
 
   return (
@@ -63,61 +79,73 @@ const Table = ({ users: initialUsers }: Props) => {
           <th>Проекты</th>
         </tr>
         <tr>
-          <th>ФИО</th>
-          <th>Должность</th>
-          <th>Подразделение</th>
-          <th>Инвентаризация</th>
-          <th>Медкомиссия</th>
-          <th>Питание</th>
-          <th>
+          <TableSort setSortBy={setSortBy} sortBy={sortBy} name="name">
+            ФИО
+          </TableSort>
+          <TableSort setSortBy={setSortBy} sortBy={sortBy} name="title">
+            Должность
+          </TableSort>
+          <TableSort setSortBy={setSortBy} sortBy={sortBy} name="department">
+            Подразделение
+          </TableSort>
+          <TableSortProject
+            setProject={setProject}
+            project={project}
+            name="medkomissia"
+          >
+            Медкомиссия
+          </TableSortProject>
+          <TableSortProject
+            setProject={setProject}
+            project={project}
+            name="inventory"
+          >
+            Инвентаризация
+          </TableSortProject>
+          <TableSortProject
+            setProject={setProject}
+            project={project}
+            name="energetics"
+          >
             Энергетики
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8.25 6.75L12 3m0 0l3.75 3.75M12 3v18"
-              />
-            </svg>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15.75 17.25L12 21m0 0l-3.75-3.75M12 21V3"
-              />
-            </svg>
-          </th>
+          </TableSortProject>
+          <TableSortProject
+            setProject={setProject}
+            project={project}
+            name="pitanie"
+          >
+            Питание
+          </TableSortProject>
         </tr>
       </thead>
       <tbody>
-        {users.map((user) => (
+        {users?.map((user) => (
           <tr key={user.id}>
             <td>{user.name}</td>
             <td>{user.title}</td>
-            <td>
-              <select name="inventory" id="inventory">
-                {USER_ROLES_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </td>
             <td>{user.department}</td>
-            <td>{user.department}</td>
+            {projects.map((project) => (
+              <td key={project.id}>
+                <select
+                  onChange={(e) =>
+                    onUserEditRole(+e.target.value, project.id, user.id)
+                  }
+                  value={
+                    user?.projects_users?.find(
+                      (project_user) => project_user.project_id === project.id
+                    )?.role ?? 5
+                  }
+                  name={project.name}
+                  id={project.id.toString()}
+                >
+                  {USER_ROLES_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </td>
+            ))}
           </tr>
         ))}
       </tbody>

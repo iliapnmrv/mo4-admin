@@ -1,26 +1,24 @@
 import Table from "@/components/Table/Table";
-import { PrismaClient } from "@prisma/client";
-import Image from "next/image";
-import Link from "next/link";
-
-const prisma = new PrismaClient();
-
-async function getData() {
-  // console.log(prisma.users);
-
-  const users = await prisma.users.findMany({
-    include: { projects_users: true },
-  });
-
-  return users;
-}
+import { headers } from "next/headers";
 
 export default async function Home() {
-  const users = await getData();
+  const headersData = headers();
+  const protocol = headersData.get("x-forwarded-proto");
+  const host = headersData.get("host");
+
+  const users_res = await fetch(`${protocol}://${host}/api`, {
+    next: { tags: ["users"] },
+  });
+  const projects_res = await fetch(`${protocol}://${host}/api/project`, {
+    next: { tags: ["projects"] },
+  });
+
+  const users = await users_res.json();
+  const projects = await projects_res.json();
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between">
-      <Table users={users} />
+      <Table users={users} projects={projects} />
     </main>
   );
 }
