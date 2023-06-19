@@ -11,11 +11,13 @@ export async function PUT(request: NextRequest) {
     select: { id: true },
   });
 
+  console.log(relatedField, res);
+
   if (res.role === 5) {
     await prisma.projects_users.delete({ where: { id: relatedField?.id } });
   } else {
     await prisma.projects_users.upsert({
-      where: { id: relatedField?.id },
+      where: { id: relatedField?.id ?? 0 },
       create: { ...res },
       update: { role: res.role },
     });
