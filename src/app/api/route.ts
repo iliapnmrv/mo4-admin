@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const prisma = new PrismaClient();
 
+const INACTIVE_USER = "514";
+
 export async function PUT(request: NextRequest) {
   const res = await request.json();
 
@@ -32,11 +34,12 @@ export async function GET(request: NextRequest) {
 
   const users = await prisma.users.findMany({
     ...(field && direction && { orderBy: { [field]: direction } }),
-    ...(project && {
-      where: {
+    where: {
+      ...(project && {
         projects_users: { some: { projects: { name: project } } },
-      },
-    }),
+      }),
+      useraccountcontrol: { not: INACTIVE_USER },
+    },
     include: {
       projects_users: true,
     },
