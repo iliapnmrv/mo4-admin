@@ -26,6 +26,7 @@ export async function middleware(request: NextRequest) {
   const { payload } = await jose.jwtVerify(token, secret);
 
   const hasPermission =
+    payload.data &&
     (JSON.parse(payload.data as string) as TokenData).projects?.admin === 1;
 
   if (!hasPermission) {
@@ -40,7 +41,6 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
