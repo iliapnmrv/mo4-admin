@@ -16,7 +16,7 @@ type TokenPayload = {
 
 export async function middleware(request: NextRequest) {
   const { cookies } = request;
-  const { value: token } = cookies.get("dataValue") ?? { value: null };
+  const { value: token } = cookies.get("dataToken") ?? { value: null };
 
   const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "");
   if (!token) {
